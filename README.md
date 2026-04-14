@@ -204,9 +204,8 @@ If you have ideas for new visualizations, model improvements, or UI enhancements
 
 ---
 
-## 📫 Contact
+# a simple flowchart for this project🧐
 
-Created by **[@gitongaryan254-hub](https://github.com/gitongaryan254-hub)**.  
 For questions, feedback, or collaboration, reach out via GitHub issues.
 this is a simple way to look on my project flow chart.
 AI_Data_Analyzer/
@@ -228,3 +227,9 @@ AI_Data_Analyzer/
 ├─ CAT2_Report.pdf
 ├─ requirements.txt
 └─ README.md
+
+---
+
+## 📫 Contact
+
+Created by **[@gitongaryan254-hub](https://github.com/gitongaryan254-hub)**.  
