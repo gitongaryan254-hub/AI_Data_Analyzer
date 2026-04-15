@@ -1,14 +1,17 @@
-﻿# AI_Data_Analyzer
- # 🧠 AI_Data_Analyzer
+﻿ # 🧠 AI_Data_Analyzer
 
 AI_Data_Analyzer is an end‑to‑end machine learning project that takes raw student academic data and turns it into **actionable performance insights**.  
-Built by [`@gitongaryan254-hub`](https://github.com/gitongaryan254-hub), this project analyzes university student performance and habits, cleans messy CSVs, and predicts performance categories:
+Built by [`@gitongaryan254-hub`](https://github.com/gitongaryan254-hub), 
+this project analyzes university student performance and habits, cleans messy CSVs, and predicts performance categories:
 
 > **Poor · Average · Good · Very Good · Excellent**
 
 The stack combines:
 - **Pandas & NumPy** for data cleaning, statistics, and feature engineering  
-- **ydata-profiling** for automated, professional EDA reports  
+- **Streetviz** Provides interactive profiling and summary reports of the dataset.
+
+- **Seaborn** Generates statistical plots such as histograms, scatter plots, and correlation heatmaps.
+- Together, they deliver clear insights into student performance patterns and complement the Decision Tree model built with scikit‑learn.
 - **scikit-learn** with a **Decision Tree** model for interpretable predictions  
 - **Matplotlib/Seaborn** for visualizations (exported to PNG)  
 - **Streamlit** for an interactive web app that supports:
@@ -40,7 +43,10 @@ AI_Data_Analyzer/
 ├─ app.py                                     # Streamlit front-end
 ├─ decision_tree_student_predictor.py         # ML backend (training + inference)
 ├─ visualization.png                          # Example performance visualization
-├─ university_performance_habits_report.html  # ydata-profiling report
+├─ university_performance_habits_report.html  # Streetviz and Seaborn profiling report
+# Streetviz provides interactive dataset profiling and summary reports.
+# Seaborn is used for statistical visualizations (histograms, scatter plots, heatmaps).
+
 ├─ CAT2_Report.pdf                            # Project documentation & reflection
 ├─ requirements.txt                           # Python dependencies
 └─ README.md
@@ -206,7 +212,6 @@ If you have ideas for new visualizations, model improvements, or UI enhancements
 
 # a simple flowchart for this project🧐
 
-For questions, feedback, or collaboration, reach out via GitHub issues.
 this is a simple way to look on my project flow chart.
 AI_Data_Analyzer/
 ├─ data/
@@ -232,4 +237,17 @@ AI_Data_Analyzer/
 
 ## 📫 Contact
 
+For questions, feedback, or collaboration, reach out via GitHub issues.
 Created by **[@gitongaryan254-hub](https://github.com/gitongaryan254-hub)**.  
+you can also contact me via phone number : +254105185046
+or also reach out to me on my instagram page @rayooh.tosh
+am free for suggestions,improvements and collaborations for a better and more intelligent model.😇
+
+---
+
+## 😎 authers information
+university : african international university
+course : cybersecurity and AI
+name : RYAN GITONGA
+admn. no. : 251362DAI
+email : gamingstosh@gmail.com
