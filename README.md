@@ -44,8 +44,8 @@ AI_Data_Analyzer/
 ├─ decision_tree_student_predictor.py         # ML backend (training + inference)
 ├─ visualization.png                          # Example performance visualization
 ├─ university_performance_habits_report.html  # Streetviz and Seaborn profiling report
-# Streetviz provides interactive dataset profiling and summary reports.
-# Seaborn is used for statistical visualizations (histograms, scatter plots, heatmaps).
+                               # Streetviz provides interactive dataset profiling and summary reports.
+                               # Seaborn is used for statistical visualizations (histograms, scatter plots, heatmaps).
 
 ├─ CAT2_Report.pdf                            # Project documentation & reflection
 ├─ requirements.txt                           # Python dependencies
@@ -239,8 +239,9 @@ AI_Data_Analyzer/
 
 For questions, feedback, or collaboration, reach out via GitHub issues.
 Created by **[@gitongaryan254-hub](https://github.com/gitongaryan254-hub)**.  
-you can also contact me via phone number : +254105185046
-or also reach out to me on my instagram page @rayooh.tosh
+you can also contact me via phone number : +254105185046 
+you may also reach out to me on my instagram page @rayooh.tosh
+
 am free for suggestions,improvements and collaborations for a better and more intelligent model.😇
 
 ---
