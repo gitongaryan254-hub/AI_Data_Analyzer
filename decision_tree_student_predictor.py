@@ -5,7 +5,7 @@ from typing import Dict, List, Set, Tuple
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
@@ -58,10 +58,12 @@ FEATURE_ALIASES = {
 
 @dataclass
 class PredictorArtifacts:
+    """Objects the CLI and Streamlit app reuse after one training run."""
     model: Pipeline
     feature_columns: List[str]
     reference_df: pd.DataFrame
     accuracy: float
+    mse: float
 
 
 def create_classification_target(df: pd.DataFrame, source_column: str) -> pd.DataFrame:
@@ -77,6 +79,7 @@ def create_classification_target(df: pd.DataFrame, source_column: str) -> pd.Dat
 
 
 def load_dataset(csv_path: str) -> pd.DataFrame:
+    """Load the cleaned CSV and create the target label used for classification."""
     df = pd.read_csv(csv_path)
     df.columns = (
         df.columns.str.strip().str.lower().str.replace(" ", "_", regex=False)
@@ -91,6 +94,7 @@ def load_dataset(csv_path: str) -> pd.DataFrame:
 
 
 def build_model_pipeline(feature_columns: List[str], X: pd.DataFrame) -> Pipeline:
+    """Build preprocessing and tree-classifier steps into one reusable pipeline."""
     numeric_features = [
         col for col in feature_columns if pd.api.types.is_numeric_dtype(X[col])
     ]
@@ -152,15 +156,40 @@ def split_data(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series,
 
 
 def train_model(df: pd.DataFrame) -> PredictorArtifacts:
+    """Train the model once and package the artifacts needed for prediction screens."""
     X_train, X_test, y_train, y_test, feature_columns = split_data(df)
     model = build_model_pipeline(feature_columns, X_train)
     model.fit(X_train, y_train)
 
+    # Accuracy measures exact class hits, while MSE shows how far off ordinal predictions are.
     y_pred = model.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
-    print("\nModel trained successfully.")
-    print(f"Test Accuracy: {accuracy:.3f}")
-    print("\nClassification Report:")
+    label_to_score = {label: score for score, label in enumerate(PERFORMANCE_LABELS)}
+    y_test_scores = y_test.map(label_to_score).astype(float)
+    y_pred_scores = pd.Series(y_pred, index=y_test.index).map(label_to_score).astype(float)
+    mse = mean_squared_error(y_test_scores, y_pred_scores)
+
+    separator = "=" * 52
+    print(f"\n{separator}")
+    print("  MODEL TRAINING COMPLETE")
+    print(separator)
+    print(f"  Total dataset rows      : {len(X_train) + len(X_test):,}")
+    print(f"  Training set size       : {len(X_train):,} rows (80%)")
+    print(f"  Test set size           : {len(X_test):,} rows (20%)")
+    print(f"  Number of features used : {len(feature_columns)}")
+    print(separator)
+    print("  CLASS DISTRIBUTION IN TEST SET")
+    for label in PERFORMANCE_LABELS:
+        count = int((y_test == label).sum())
+        bar = "#" * (count // 20)
+        print(f"  {label:<12}: {count:>4}  {bar}")
+    print(separator)
+    print("  EVALUATION METRICS")
+    print(f"  Test Accuracy           : {accuracy:.3f}  ({accuracy * 100:.1f}%)")
+    print(f"  Mean Squared Error      : {mse:.3f}")
+    print(f"  Root MSE                : {mse ** 0.5:.3f}")
+    print(separator)
+    print("  CLASSIFICATION REPORT")
     print(classification_report(y_test, y_pred, zero_division=0))
 
     return PredictorArtifacts(
@@ -168,6 +197,7 @@ def train_model(df: pd.DataFrame) -> PredictorArtifacts:
         feature_columns=feature_columns,
         reference_df=X_train,
         accuracy=accuracy,
+        mse=mse,
     )
 
 
@@ -175,6 +205,7 @@ def get_default_feature_values(
     feature_columns: List[str],
     reference_df: pd.DataFrame,
 ) -> Dict[str, object]:
+    """Provide fallback values so incomplete user input can still be scored."""
     defaults: Dict[str, object] = {}
     for col in feature_columns:
         if pd.api.types.is_numeric_dtype(reference_df[col]):
@@ -322,6 +353,7 @@ def extract_features_from_question(
     feature_columns: List[str],
     reference_df: pd.DataFrame,
 ) -> Dict[str, object]:
+    """Combine direct key=value parsing with lighter natural-language matching."""
     extracted = parse_question_to_feature_values(question, feature_columns)
     natural_language_extracted = parse_natural_language_feature_values(
         question,
@@ -371,6 +403,7 @@ def build_single_input_from_answers(
 
 
 def apply_rule_based_override(row_df: pd.DataFrame, explicit_features: Set[str] | None = None) -> str | None:
+    """Apply strict business rules before falling back to the learned model prediction."""
     row = row_df.iloc[0]
 
     attendance = float(row.get("class_attendance_percent", 100))
@@ -437,6 +470,7 @@ def build_prediction_explanation(
     prediction: str,
     explicit_features: Set[str] | None = None,
 ) -> str:
+    """Turn the chosen prediction into a human-readable explanation."""
     row = row_df.iloc[0]
 
     attendance = float(row.get("class_attendance_percent", 100))
@@ -769,62 +803,80 @@ def collect_plain_english_inputs(
     return answers
 
 
+def _print_prediction_response(prediction: str, explanation: str, row_df: pd.DataFrame, mapped_count: int) -> None:
+    """Print the full chat-style response: prediction, reason, detected fields, and guidance."""
+    has_weakness, guidance_items = build_student_guidance(row_df, prediction)
+    guidance_title = "Improvement plan" if has_weakness else "Keep the pace"
+    separator = "-" * 52
+    print(f"\n{separator}")
+    print(f"  Prediction  : {format_prediction_summary(prediction)}")
+    print(f"{separator}")
+    print(f"  Reason      : {explanation}")
+    print(f"  Fields used : {mapped_count} direct field(s) detected")
+    print(f"{separator}")
+    print(f"  {guidance_title}:")
+    for item in guidance_items:
+        print(f"    - {item}")
+    print(separator)
+
+
 def run_mode_a(artifacts: PredictorArtifacts) -> None:
-    print("\nMode A selected: direct feature=value input")
-    print("Example:")
-    print(
-        "age=21, gender=female, major=medicine, university_year=3, "
-        "study_hours_per_day=4.5, class_attendance_percent=92, mental_stress_level=4.2"
-    )
-    user_question = input("\nEnter feature values: ").strip()
-    predicted_label = predict_from_user_question(
+    print("\nMode A: type a description or feature=value pairs.")
+    print("Examples:")
+    print("  age=21, attendance=85, assignment score=78, study hours=4")
+    print("  A student who studies 3 hours a day with low attendance and a part-time job")
+    user_question = input("\nDescribe the student: ").strip()
+    prediction, explanation, row_df = predict_question_with_reason(
         user_question,
         artifacts.model,
         artifacts.feature_columns,
         artifacts.reference_df,
     )
-    print("\nPrediction Result")
-    print("-----------------")
-    print(f"Based on the provided student details, predicted performance is: {format_prediction_summary(predicted_label)}")
+    mapped_pairs = parse_question_to_feature_values(user_question, artifacts.feature_columns)
+    _print_prediction_response(prediction, explanation, row_df, len(mapped_pairs))
 
 
 def run_mode_b(artifacts: PredictorArtifacts) -> None:
-    print("\nMode B selected: guided plain-English prompts")
+    print("\nMode B: answer each prompt to describe the student.")
     answers = collect_plain_english_inputs(
         artifacts.feature_columns,
         artifacts.reference_df,
     )
-    predicted_label = predict_from_answers(
+    prediction, explanation, row_df = predict_answers_with_reason(
         answers,
         artifacts.model,
         artifacts.feature_columns,
         artifacts.reference_df,
     )
-    print("\nPrediction Result")
-    print("-----------------")
-    print(f"Based on the student responses, predicted performance is: {format_prediction_summary(predicted_label)}")
+    _print_prediction_response(prediction, explanation, row_df, len(answers))
 
 
 def load_and_train_predictor(csv_path: str = CSV_PATH) -> PredictorArtifacts:
+    """Single entry point used by both the CLI flow and the Streamlit app."""
     df = load_dataset(csv_path)
     return train_model(df)
 
 
 def main() -> None:
+    # Running this file directly starts the command-line prediction workflow.
     print("Loading cleaned dataset...")
     print("Splitting data and training DecisionTreeClassifier...")
     artifacts = load_and_train_predictor(CSV_PATH)
 
-    print("\nChoose input mode:")
-    print("A - Enter one line using feature=value pairs")
-    print("B - Answer guided prompts one by one")
-    selected_mode = input("\nSelect Mode A or B: ").strip().upper()
+    while True:
+        print("\nChoose input mode:")
+        print("  A - Describe student in one line (natural language or field=value)")
+        print("  B - Answer guided prompts one by one")
+        print("  Q - Quit")
+        selected_mode = input("\nSelect Mode (A / B / Q): ").strip().upper()
 
-    if selected_mode == "B":
-        run_mode_b(artifacts)
-        return
-
-    run_mode_a(artifacts)
+        if selected_mode == "Q":
+            print("Goodbye.")
+            break
+        elif selected_mode == "B":
+            run_mode_b(artifacts)
+        else:
+            run_mode_a(artifacts)
 
 
 if __name__ == "__main__":
