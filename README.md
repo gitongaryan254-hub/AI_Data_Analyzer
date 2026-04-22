@@ -85,6 +85,7 @@ python -m streamlit run streamlit_student_predictor.py
   - Builds target labels.
   - Trains Decision Tree pipeline.
   - Reports test accuracy and MSE.
+  - ![alt text](image-1.png)
   - Supports CLI prediction flow.
 
 - `streamlit_student_predictor.py`
